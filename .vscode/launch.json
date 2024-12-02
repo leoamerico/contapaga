@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-ContapagaApplication<paga>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.contapaga.ContapagaApplication",
+            "projectName": "paga",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
