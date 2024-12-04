@@ -1,59 +1,42 @@
 package com.contapaga.controllers;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import com.contapaga.entities.Categoria;
-import com.contapaga.repositories.CategoriaRepository;
+import com.contapaga.services.CategoriaService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
-@RequestMapping("/categorias")
-public class CategoriaController {
+@RequestMapping("/categories")
+public class CategoriaController extends BaseController<Categoria, Long> {
 
     @Autowired
-    private CategoriaRepository categoriaRepository;
+    private CategoriaService categoriaService;
 
-    // Listar todas as categorias
-    @GetMapping
-    public List<Categoria> listarCategorias() {
-        return categoriaRepository.findAll();
+    @Override
+    protected List<Categoria> findAll() {
+        return categoriaService.findAll();
     }
 
-    // Pesquisar por ID
-    @GetMapping("/{id}")
-    public ResponseEntity<Categoria> buscarCategoriaPorId(@PathVariable Long id) {
-        Optional<Categoria> categoria = categoriaRepository.findById(id);
-        return categoria.map(ResponseEntity::ok)
-                        .orElse(ResponseEntity.notFound().build());
+    @Override
+    protected Categoria findById(Long id) {
+        return categoriaService.findById(id);
     }
 
-    // Salvar nova categoria
-    @PostMapping
-    public Categoria salvarCategoria(@RequestBody Categoria categoria) {
-        return categoriaRepository.save(categoria);
+    @Override
+    protected Categoria save(Categoria categoria) {
+        return categoriaService.save(categoria);
     }
 
-    // Atualizar categoria existente
-    @PutMapping("/{id}")
-    public ResponseEntity<Categoria> atualizarCategoria(@PathVariable Long id, @RequestBody Categoria categoriaAtualizada) {
-        return categoriaRepository.findById(id).map(categoria -> {
-            categoria.setNome(categoriaAtualizada.getNome());
-            categoria.setDescricao(categoriaAtualizada.getDescricao());
-            categoria.setAtivo(categoriaAtualizada.isAtivo());
-            Categoria categoriaSalva = categoriaRepository.save(categoria);
-            return ResponseEntity.ok(categoriaSalva);
-        }).orElse(ResponseEntity.notFound().build());
+    @Override
+    protected Categoria update(Long id, Categoria categoria) {
+        return categoriaService.update(id, categoria);
     }
 
-    // Deletar categoria por ID
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletarCategoria(@PathVariable Long id) {
-        return categoriaRepository.findById(id).map(categoria -> {
-            categoriaRepository.delete(categoria);
-            return ResponseEntity.noContent().<Void>build(); // Nota: Void é explicitamente inferido aqui
-        }).orElse(ResponseEntity.notFound().build());
+    @Override
+    protected void delete(Long id) {
+        categoriaService.delete(id);
     }
 }
