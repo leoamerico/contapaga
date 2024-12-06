@@ -1,8 +1,10 @@
 package com.contapaga.repositories;
 
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
 import com.contapaga.entities.Categoria;
 
-public interface CategoriaRepository extends JpaRepository<Categoria, Long> {
+@Repository
+public interface CategoriaRepository extends GenericRepository<Categoria, Long> {
     
 }
