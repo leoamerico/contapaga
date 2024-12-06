@@ -12,22 +12,22 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
-@Data // Gera automaticamente os getters, setters, toString, equals e hashCode
-@NoArgsConstructor // Gera um construtor sem argumentos
-@AllArgsConstructor // Gera um construtor com todos os argumentos
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
-@Table(name = "categoria")
-public class Categoria {
+@Table(name = "category")
+public class Category {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "O nome da categoria é obrigatório")
-    private String nome;
-    @Size(max = 255, message = "A descrição deve ter no máximo 255 caracteres")
-    private String descricao;
-    private boolean ativo; 
+    @NotBlank(message = "{category.name.notblank}")
+    private String Name;
+    @Size(max = 255, message = "{category.description.size}")
+    private String Description;
+    private boolean Active; 
 
     @Version
     private Integer version;
