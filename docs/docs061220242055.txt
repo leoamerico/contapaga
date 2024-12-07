@@ -1,0 +1,184 @@
+= SPEC-01: Controle de Acesso Centralizado
+:sectnums:
+:toc:
+
+== Background
+
+A necessidade de um sistema de autenticação e autorização local surge em cenários onde dependências externas não são viáveis devido a restrições de segurança, custo ou conectividade. Esta solução visa fornecer um sistema seguro, escalável e flexível para controle de acesso.
+
+== Requirements
+
+O sistema deve atender aos seguintes requisitos (classificados por prioridade usando MoSCoW):
+
+- **Must Have**:
+  - Gerenciamento de usuários (CRUD).
+  - Autenticação de usuários utilizando credenciais locais.
+  - Emissão de tokens JWT para autenticação baseada em sessão sem estado.
+  - Autorização baseada em papéis (roles) e permissões.
+  - Armazenamento seguro das credenciais.
+
+- **Should Have**:
+  - Logs de autenticação e autorização.
+  - Mecanismo de expiração de tokens JWT.
+
+- **Could Have**:
+  - Suporte a autenticação multifator (2FA).
+  - Auditoria das atividades de usuários.
+
+- **Won’t Have**:
+  - Integração com serviços de autenticação externos.
+
+== Method
+
+=== Arquitetura Geral
+
+- **Tecnologias Utilizadas**:
+  - **Spring Boot** com **Spring Security**.
+  - Banco de dados relacional (ex.: PostgreSQL ou MySQL).
+  - Biblioteca JWT (ex.: `jjwt` ou `auth0/java-jwt`).
+
+=== Fluxo de Autenticação
+
+1. O cliente envia credenciais (usuário e senha) para a aplicação.
+2. A aplicação verifica as credenciais no banco de dados.
+3. Em caso de sucesso, um token JWT é gerado e retornado ao cliente.
+4. O cliente usa o token JWT para acessar recursos protegidos.
+
+=== Fluxo de Autorização
+
+1. O token JWT contém as informações do usuário e seus papéis (roles).
+2. A aplicação valida o token e verifica as permissões associadas antes de conceder o acesso.
+
+=== Modelo de Dados
+
+```sql
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(100) NOT NULL,
+    enabled BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE roles (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL
+);
+
+CREATE TABLE user_roles (
+    user_id INT REFERENCES users(id),
+    role_id INT REFERENCES roles(id),
+    PRIMARY KEY (user_id, role_id)
+);
+=== Configuração do Spring Security
+
+java
+Copiar código
+@EnableWebSecurity
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
+    @Bean
+    public AuthenticationManager customAuthenticationManager() throws Exception {
+        return authenticationManager();
+    }
+
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.userDetailsService(userDetailsService())
+            .passwordEncoder(passwordEncoder());
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http.csrf().disable()
+            .authorizeRequests()
+            .antMatchers("/auth/**").permitAll()
+            .anyRequest().authenticated()
+            .and()
+            .apply(new JwtConfigurer(jwtTokenProvider));
+    }
+}
+=== Gerenciamento de Tokens JWT
+
+java
+Copiar código
+@Component
+public class JwtTokenProvider {
+
+    private final String secretKey = "mySecretKey";
+    private final long validityInMilliseconds = 3600000; // 1 hora
+
+    public String createToken(String username, List<String> roles) {
+        Claims claims = Jwts.claims().setSubject(username);
+        claims.put("roles", roles);
+
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + validityInMilliseconds);
+
+        return Jwts.builder()
+            .setClaims(claims)
+            .setIssuedAt(now)
+            .setExpiration(validity)
+            .signWith(SignatureAlgorithm.HS256, secretKey)
+            .compact();
+    }
+
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new InvalidJwtAuthenticationException("Expired or invalid JWT token");
+        }
+    }
+
+    public String getUsername(String token) {
+        return Jwts.parser().setSigningKey(secretKey)
+            .parseClaimsJws(token)
+            .getBody()
+            .getSubject();
+    }
+}
+== Implementation
+
+Criar o Banco de Dados:
+
+Configure o banco de dados no arquivo application.properties.
+Execute o script SQL para criar as tabelas de usuários e papéis.
+Configurar o Spring Security:
+
+Implemente UserDetailsService para carregar os usuários do banco de dados.
+Configure o PasswordEncoder para armazenar senhas criptografadas.
+Implementar Endpoints:
+
+/auth/login: Para autenticação e emissão de tokens JWT.
+/auth/register: Para registrar novos usuários.
+Recursos protegidos que exigem JWT.
+Gerar e Validar Tokens:
+
+Crie uma classe JwtTokenProvider para gerenciar a lógica dos tokens.
+Teste e Validação:
+
+Teste os endpoints usando ferramentas como Postman.
+Valide a autenticação e autorização.
+== Milestones
+
+Configuração inicial do projeto Spring Boot (1 semana).
+Implementação do banco de dados e integração com Spring Security (2 semanas).
+Desenvolvimento dos endpoints de autenticação (1 semana).
+Implementação e testes de autorização baseada em papéis (1 semana).
+Teste de carga e ajustes finais (1 semana).
+== Gathering Results
+
+Valide se o sistema atende aos requisitos de autenticação e autorização.
+Realize testes de segurança, incluindo injeção de SQL e ataques de força bruta.
+Meça o desempenho do sistema com múltiplos usuários simultâneos.
+css
+Copiar código
